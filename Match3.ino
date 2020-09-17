@@ -9,7 +9,7 @@ byte blinkColor = RD;
 byte previousColor = RD;
 
 Timer dissolveTimer;
-#define DISSOLVE_TIME 1000
+#define DISSOLVE_TIME 1500
 
 void setup() {
   randomize();
@@ -71,10 +71,16 @@ void loop() {
 
 ////DISPLAY FUNCTIONS
 void dissolveDisplay() {
-  if (dissolveTimer.getRemaining() > DISSOLVE_TIME / 2) {
-    setColor(makeColorHSB(colorHues[previousColor], 255, 100));
-  } else {
-    setColor(makeColorHSB(colorHues[blinkColor], 255, 100));
+  if (dissolveTimer.getRemaining() > DISSOLVE_TIME / 2) {//first half
+
+    byte dissolveBrightness = map(dissolveTimer.getRemaining() - (DISSOLVE_TIME / 2), 0, DISSOLVE_TIME / 2, 0, 255);
+    setColor(makeColorHSB(colorHues[previousColor], 255, dissolveBrightness));
+
+  } else {//second half
+
+    byte dissolveBrightness = map(dissolveTimer.getRemaining(), 0, DISSOLVE_TIME / 2, 0, 255);
+    setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
+
   }
 }
 
@@ -130,6 +136,8 @@ void inertLoop() {
 }
 
 void rainbowLoop() {
+  byte neighborColorSets[5] = {0, 0, 0, 0, 0};
+
   //all I gotta do is look for neighbors that are matching
   FOREACH_FACE(f) {
     if (!isValueReceivedOnFaceExpired(f)) {
@@ -137,6 +145,8 @@ void rainbowLoop() {
       if (getNeighborState(neighborData) == MATCH_MADE) {//this on is in matchmade!
         setFullState(MATCH_MADE);//go into matching
         blinkColor = getNeighborColor(neighborData);//change color to this match color
+      } else {//no match made, but track their colors
+
       }
     }
   }
@@ -180,45 +190,50 @@ byte matchesMade = 0;
 
 void createNewBlink() {
 
-  if (specialState == INERT) {//this is a regular blink becoming a new blink
-    matchesMade++;
-    previousColor = blinkColor;
-    blinkColor = random(4);
+  //this is a temp thing to test other stuff
+  previousColor = blinkColor;
+  blinkColor = (blinkColor + random(3) + 1) % 5;
 
-    if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
-      byte whichSpecial = random(4);
-      switch (whichSpecial) {
-        case 0://a rainbow piece!
-          nextState = RAINBOW;
-          specialState = RAINBOW;
-          break;
-        case 1:
-          nextState = INERT;
-          specialState = BUCKET;
-          break;
-        case 2:
-          nextState = INERT;
-          specialState = BEAM;
-          break;
-        case 3:
-          nextState = RAINBOW;
-          specialState = EXPLODE;
-          break;
-      }
-    } else {
-      nextState = INERT;
-      specialState = INERT;
-    }
-  } else if (specialState == RAINBOW) {//this is a rainbow blink becoming normal again
-    previousColor = blinkColor;
-    blinkColor = random(4);
-    matchesMade = 0;
-    nextState = INERT;
-    specialState = INERT;
-  } else {//special blink, just needs a new color
-    previousColor = blinkColor;
-    blinkColor = random(4);
-  }
+  //  if (specialState == INERT) {//this is a regular blink becoming a new blink
+  //    matchesMade++;
+  //    previousColor = blinkColor;
+  //    //always become a new color
+  //    blinkColor = (blinkColor + random(3) + 1) % 5;
+  //
+  //    if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
+  //      byte whichSpecial = random(3);
+  //      switch (whichSpecial) {
+  //        case 0://a rainbow piece!
+  //          nextState = RAINBOW;
+  //          specialState = RAINBOW;
+  //          break;
+  //        case 1:
+  //          nextState = INERT;
+  //          specialState = BUCKET;
+  //          break;
+  //        case 2:
+  //          nextState = INERT;
+  //          specialState = BEAM;
+  //          break;
+  //        case 3:
+  //          nextState = RAINBOW;
+  //          specialState = EXPLODE;
+  //          break;
+  //      }
+  //    } else {
+  //      nextState = INERT;
+  //      specialState = INERT;
+  //    }
+  //  } else if (specialState == RAINBOW) {//this is a rainbow blink becoming normal again
+  //    previousColor = blinkColor;
+  //    blinkColor = random(4);
+  //    matchesMade = 0;
+  //    nextState = INERT;
+  //    specialState = INERT;
+  //  } else {//special blink, just needs a new color
+  //    previousColor = blinkColor;
+  //    blinkColor = random(4);
+  //  }
 
 }
 
