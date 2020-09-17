@@ -95,7 +95,7 @@ void inertDisplay() {
       }
       break;
     case EXPLODE:
-      setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
+      setColor(makeColorHSB(colorHues[blinkColor], 255, random(255)));
       break;
     case BEAM:
       setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
@@ -104,6 +104,7 @@ void inertDisplay() {
       setColorOnFace(WHITE, 4);
       break;
     case BUCKET:
+      setColor(OFF);
       setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), random(2));
       setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 3);
       setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 4);
@@ -186,54 +187,54 @@ void resolveLoop() {
 }
 
 byte matchesMade = 0;
-#define MATCH_GOAL 6
+#define MATCH_GOAL 4
 
 void createNewBlink() {
 
-  //this is a temp thing to test other stuff
+  //always become a new color
   previousColor = blinkColor;
   blinkColor = (blinkColor + random(3) + 1) % 5;
 
-  //  if (specialState == INERT) {//this is a regular blink becoming a new blink
-  //    matchesMade++;
-  //    previousColor = blinkColor;
-  //    //always become a new color
-  //    blinkColor = (blinkColor + random(3) + 1) % 5;
-  //
-  //    if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
-  //      byte whichSpecial = random(3);
-  //      switch (whichSpecial) {
-  //        case 0://a rainbow piece!
-  //          nextState = RAINBOW;
-  //          specialState = RAINBOW;
-  //          break;
-  //        case 1:
-  //          nextState = INERT;
-  //          specialState = BUCKET;
-  //          break;
-  //        case 2:
-  //          nextState = INERT;
-  //          specialState = BEAM;
-  //          break;
-  //        case 3:
-  //          nextState = RAINBOW;
-  //          specialState = EXPLODE;
-  //          break;
-  //      }
-  //    } else {
-  //      nextState = INERT;
-  //      specialState = INERT;
-  //    }
-  //  } else if (specialState == RAINBOW) {//this is a rainbow blink becoming normal again
-  //    previousColor = blinkColor;
-  //    blinkColor = random(4);
-  //    matchesMade = 0;
-  //    nextState = INERT;
-  //    specialState = INERT;
-  //  } else {//special blink, just needs a new color
-  //    previousColor = blinkColor;
-  //    blinkColor = random(4);
-  //  }
+  if (specialState == INERT) {//this is a regular blink becoming a new blink
+
+    matchesMade++;
+    if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
+      byte whichSpecial = random(3);
+      switch (whichSpecial) {
+        case 0://a rainbow piece!
+          nextState = RAINBOW;
+          specialState = RAINBOW;
+          break;
+        case 1:
+          nextState = INERT;
+          specialState = BUCKET;
+          break;
+        case 2:
+          nextState = INERT;
+          specialState = BEAM;
+          break;
+        case 3:
+          nextState = INERT;
+          specialState = EXPLODE;
+          break;
+      }
+    } else {
+      nextState = INERT;
+      specialState = INERT;
+    }
+
+  } else if (specialState == RAINBOW) {
+
+    //this is a rainbow blink becoming normal again
+    matchesMade = 0;
+    nextState = INERT;
+    specialState = INERT;
+
+  } else {
+
+    //special blink, just needs a new color
+
+  }
 
 }
 
