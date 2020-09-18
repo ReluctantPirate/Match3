@@ -1,5 +1,5 @@
 enum blinkStates {INERT, MATCH_MADE, DISSOLVING, EXPLODE, BEAM, BUCKET, RAINBOW, RESOLVE};
-byte faceStates[6] = {INERT, INERT, INERT, INERT, INERT, INERT};
+byte signalState = INERT;
 byte nextState = INERT;
 byte specialState = INERT;
 
@@ -20,7 +20,7 @@ void loop() {
 
   //run loops
   FOREACH_FACE(f) {
-    switch (faceStates[f]) {
+    switch (signalState) {
       case INERT:
         inertLoop();
         break;
@@ -31,7 +31,7 @@ void loop() {
         dissolvingLoop();
         break;
       case EXPLODE:
-        //explodeLoop();
+        explodeLoop();
         break;
       case BEAM:
         //beamLoop();
@@ -49,13 +49,11 @@ void loop() {
   }
 
   //send data
-  FOREACH_FACE(f) {
-    byte sendData = (faceStates[f] << 3) + (blinkColor);
-    setValueSentOnFace(sendData, f);
-  }
+  byte sendData = (signalState << 3) + (blinkColor);
+  setValueSentOnAllFaces(sendData);
 
   //temp display
-  switch (faceStates[0]) {
+  switch (signalState) {
     case INERT:
     case RAINBOW:
       inertDisplay();
@@ -134,6 +132,21 @@ void inertLoop() {
   if (sameColorNeighbors >= 2) {
     setFullState(MATCH_MADE);
   }
+
+  //listen for button clicks
+  if (buttonSingleClicked()) {
+    switch (specialState) {
+      case BEAM:
+        setFullState(EXPLODE);
+        break;
+      case EXPLODE:
+        setFullState(EXPLODE);
+        break;
+      case BUCKET:
+        setFullState(BUCKET);
+        break;
+    }
+  }
 }
 
 void rainbowLoop() {
@@ -183,6 +196,10 @@ void dissolvingLoop() {
 }
 
 void resolveLoop() {
+
+}
+
+void explodeLoop() {
 
 }
 
@@ -239,9 +256,7 @@ void createNewBlink() {
 }
 
 void setFullState(byte state) {
-  FOREACH_FACE(f) {
-    faceStates[f] = state;
-  }
+  signalState = state;
 }
 
 byte getNeighborState(byte data) {
