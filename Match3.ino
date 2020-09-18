@@ -204,7 +204,7 @@ void explodeLoop() {
 }
 
 byte matchesMade = 0;
-#define MATCH_GOAL 4
+#define MATCH_GOAL 7
 
 void createNewBlink() {
 
