@@ -2,8 +2,9 @@ enum blinkStates {INERT, MATCH_MADE, DISSOLVING, EXPLODE, BEAM, BUCKET, RAINBOW,
 byte signalState = INERT;
 byte nextState = INERT;
 byte specialState = INERT;
+bool wasActivated = false;
 
-enum blinkColor {RD, YW, GR, BL, PR};
+enum blinkColor {RD, YW, GR, BL, PR, RNBW};
 byte colorHues[5] = {0, 50, 75, 100, 200};
 byte blinkColor = RD;
 byte previousColor = RD;
@@ -37,7 +38,7 @@ void loop() {
         //beamLoop();
         break;
       case BUCKET:
-        //bucketLoop();
+        bucketLoop();
         break;
       case RAINBOW:
         rainbowLoop();
@@ -65,6 +66,9 @@ void loop() {
       dissolveDisplay();
       break;
   }
+
+  //dump button presses
+  buttonSingleClicked();
 }
 
 ////DISPLAY FUNCTIONS
@@ -128,6 +132,21 @@ void inertLoop() {
     }
   }
 
+  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
+  FOREACH_FACE(f) {
+    if (!isValueReceivedOnFaceExpired(f)) {
+      byte neighborData = getLastValueReceivedOnFace(f);
+      if (getNeighborState(neighborData) == EXPLODE) {
+        //so this makes us into a matching color thing
+        signalState = MATCH_MADE;
+        blinkColor = getNeighborColor(neighborData);
+      } else if (getNeighborState(neighborData) == BUCKET) {
+        signalState = BUCKET;
+        blinkColor = getNeighborColor(neighborData);
+      }
+    }
+  }
+
 
   if (sameColorNeighbors >= 2) {
     setFullState(MATCH_MADE);
@@ -141,6 +160,7 @@ void inertLoop() {
         break;
       case EXPLODE:
         setFullState(EXPLODE);
+        wasActivated = true;
         break;
       case BUCKET:
         setFullState(BUCKET);
@@ -200,6 +220,24 @@ void resolveLoop() {
 }
 
 void explodeLoop() {
+  //so in here all we do is make sure all of our neighbors are in MATCH_MADE
+  bool hasInertNeighbors = false;
+
+  FOREACH_FACE(f) {
+    if (!isValueReceivedOnFaceExpired(f)) {
+      byte neighborData = getLastValueReceivedOnFace(f);
+      if (getNeighborState(neighborData) == INERT) {
+        hasInertNeighbors = true;
+      }
+    }
+  }
+
+  if (hasInertNeighbors == false) {
+    signalState = MATCH_MADE;
+  }
+}
+
+void bucketLoop() {
 
 }
 
@@ -224,11 +262,11 @@ void createNewBlink() {
           break;
         case 1:
           nextState = INERT;
-          specialState = BUCKET;
+          specialState = EXPLODE;
           break;
         case 2:
           nextState = INERT;
-          specialState = BEAM;
+          specialState = EXPLODE;
           break;
         case 3:
           nextState = INERT;
@@ -250,6 +288,11 @@ void createNewBlink() {
   } else {
 
     //special blink, just needs a new color
+    if (wasActivated) {
+      matchesMade = 0;
+      nextState = INERT;
+      specialState = INERT;
+    }
 
   }
 
