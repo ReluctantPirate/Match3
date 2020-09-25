@@ -12,6 +12,14 @@ byte previousColor;
 Timer dissolveTimer;
 #define DISSOLVE_TIME 1500
 
+byte matchesMade = 0;
+#define MATCH_GOAL 7
+Timer bubbleTimer;
+byte bubbleFace;
+#define BUBBLE_TIME 300
+#define BUBBLE_WAIT_MIN 300
+#define BUBBLE_WAIT_MAX 2000
+
 void setup() {
   randomize();
   blinkColor = random(NUM_COLORS - 1);
@@ -118,6 +126,20 @@ void inertDisplay() {
       setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 5);
       break;
   }
+
+  //do bubbles if it's bubble time
+  if (specialState == INERT) {
+    if (bubbleTimer.isExpired()) {//the timer is over, just reset
+      //what's our current wait time?
+      bubbleTimer.set(map(MATCH_GOAL - matchesMade, 0, MATCH_GOAL, BUBBLE_WAIT_MIN, BUBBLE_WAIT_MAX));
+      bubbleFace = (bubbleFace + random(4) + 1) % 6;//choose a new bubble face
+    } else if (bubbleTimer.getRemaining() <= BUBBLE_TIME) {//ooh, we are actively bubbling right now
+      //how bubbly are we right now?
+      byte bubbleSat = map(BUBBLE_TIME - bubbleTimer.getRemaining(), 0, BUBBLE_TIME, 100, 255);
+      setColorOnFace(makeColorHSB(colorHues[blinkColor], bubbleSat, 255), bubbleFace);
+    }
+  }
+
 }
 
 void inertLoop() {
@@ -245,9 +267,6 @@ void explodeLoop() {
 void bucketLoop() {
 
 }
-
-byte matchesMade = 0;
-#define MATCH_GOAL 7
 
 void createNewBlink() {
 
