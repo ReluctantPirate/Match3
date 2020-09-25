@@ -4,17 +4,17 @@ byte nextState = INERT;
 byte specialState = INERT;
 bool wasActivated = false;
 
-enum blinkColor {RD, YW, GR, BL, PR, RNBW};
-byte colorHues[5] = {0, 50, 75, 100, 200};
-byte blinkColor = RD;
-byte previousColor = RD;
+#define NUM_COLORS 6
+byte colorHues[6] = {0, 50, 75, 100, 200, 235};
+byte blinkColor;
+byte previousColor;
 
 Timer dissolveTimer;
 #define DISSOLVE_TIME 1500
 
 void setup() {
   randomize();
-  blinkColor = random(4);
+  blinkColor = random(NUM_COLORS - 1);
 }
 
 void loop() {
@@ -57,10 +57,8 @@ void loop() {
   switch (signalState) {
     case INERT:
     case RAINBOW:
-      inertDisplay();
-      break;
     case MATCH_MADE:
-      setColor(WHITE);
+      inertDisplay();
       break;
     case DISSOLVING:
       dissolveDisplay();
@@ -81,7 +79,14 @@ void dissolveDisplay() {
   } else {//second half
 
     byte dissolveBrightness = map(dissolveTimer.getRemaining(), 0, DISSOLVE_TIME / 2, 0, 255);
-    setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
+
+    if (specialState == RAINBOW) {
+      FOREACH_FACE(f) {
+        setColorOnFace(makeColorHSB(colorHues[random(NUM_COLORS - 1)], 255, 255 - dissolveBrightness), f);
+      }
+    } else {
+      setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
+    }
 
   }
 }
@@ -93,7 +98,7 @@ void inertDisplay() {
       break;
     case RAINBOW:
       FOREACH_FACE(f) {
-        setColorOnFace(makeColorHSB(colorHues[random(4)], 255, 255), f);
+        setColorOnFace(makeColorHSB(colorHues[random(NUM_COLORS - 1)], 255, 255), f);
       }
       break;
     case EXPLODE:
@@ -248,27 +253,19 @@ void createNewBlink() {
 
   //always become a new color
   previousColor = blinkColor;
-  blinkColor = (blinkColor + random(3) + 1) % 5;
+  blinkColor = (blinkColor + random(NUM_COLORS - 2) + 1) % NUM_COLORS;
 
   if (specialState == INERT) {//this is a regular blink becoming a new blink
 
     matchesMade++;
     if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
-      byte whichSpecial = random(3);
+      byte whichSpecial = random(1);
       switch (whichSpecial) {
         case 0://a rainbow piece!
           nextState = RAINBOW;
           specialState = RAINBOW;
           break;
         case 1:
-          nextState = INERT;
-          specialState = EXPLODE;
-          break;
-        case 2:
-          nextState = INERT;
-          specialState = EXPLODE;
-          break;
-        case 3:
           nextState = INERT;
           specialState = EXPLODE;
           break;
