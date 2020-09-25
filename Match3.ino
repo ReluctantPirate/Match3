@@ -82,7 +82,7 @@ void dissolveDisplay() {
 
     if (specialState == RAINBOW) {
       FOREACH_FACE(f) {
-        setColorOnFace(makeColorHSB(colorHues[random(NUM_COLORS - 1)], 255, 255 - dissolveBrightness), f);
+        setColorOnFace(makeColorHSB(colorHues[f], 255, 255 - dissolveBrightness), f);
       }
     } else {
       setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
@@ -98,7 +98,7 @@ void inertDisplay() {
       break;
     case RAINBOW:
       FOREACH_FACE(f) {
-        setColorOnFace(makeColorHSB(colorHues[random(NUM_COLORS - 1)], 255, 255), f);
+        setColorOnFace(makeColorHSB(colorHues[f], 255, 255), f);
       }
       break;
     case EXPLODE:
