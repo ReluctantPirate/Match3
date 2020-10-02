@@ -78,6 +78,9 @@ void loop() {
 }
 
 ////DISPLAY FUNCTIONS
+
+#define SWIRL_INTERVAL 50
+
 void dissolveDisplay() {
   if (dissolveTimer.getRemaining() > DISSOLVE_TIME / 2) {//first half
 
@@ -97,6 +100,15 @@ void dissolveDisplay() {
     }
 
   }
+
+  //also do the little swirly goo
+  byte swirlFrame = (DISSOLVE_TIME - dissolveTimer.getRemaining()) / SWIRL_INTERVAL;//this runs from 0 - some large number, all we care about are the first 6
+  FOREACH_FACE(f) {
+    if (f == swirlFrame) {
+      setColorOnFace(WHITE, f);
+    }
+  }
+
 }
 
 void inertDisplay() {
