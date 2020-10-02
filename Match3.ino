@@ -1,4 +1,4 @@
-enum blinkStates {INERT, MATCH_MADE, DISSOLVING, EXPLODE, BEAM, BUCKET, RAINBOW, RESOLVE};
+enum blinkStates {INERT, MATCH_MADE, DISSOLVING, EXPLODE, BEAM, BUCKET, RESOLVE};
 byte signalState = INERT;
 byte nextState = INERT;
 byte specialState = INERT;
@@ -13,11 +13,11 @@ Timer dissolveTimer;
 #define DISSOLVE_TIME 1500
 
 byte matchesMade = 0;
-#define MATCH_GOAL 7
+#define MATCH_GOAL 10
 Timer bubbleTimer;
 byte bubbleFace;
 #define BUBBLE_TIME 300
-#define BUBBLE_WAIT_MIN 300
+#define BUBBLE_WAIT_MIN 150
 #define BUBBLE_WAIT_MAX 2000
 
 void setup() {
@@ -48,9 +48,6 @@ void loop() {
       case BUCKET:
         bucketLoop();
         break;
-      case RAINBOW:
-        rainbowLoop();
-        break;
       case RESOLVE:
         resolveLoop();
         break;
@@ -64,7 +61,6 @@ void loop() {
   //temp display
   switch (signalState) {
     case INERT:
-    case RAINBOW:
     case MATCH_MADE:
       inertDisplay();
       break;
@@ -90,14 +86,7 @@ void dissolveDisplay() {
   } else {//second half
 
     byte dissolveBrightness = map(dissolveTimer.getRemaining(), 0, DISSOLVE_TIME / 2, 0, 255);
-
-    if (specialState == RAINBOW) {
-      FOREACH_FACE(f) {
-        setColorOnFace(makeColorHSB(colorHues[f], 255, 255 - dissolveBrightness), f);
-      }
-    } else {
-      setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
-    }
+    setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
 
   }
 
@@ -116,26 +105,14 @@ void inertDisplay() {
     case INERT:
       setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
       break;
-    case RAINBOW:
-      FOREACH_FACE(f) {
-        setColorOnFace(makeColorHSB(colorHues[f], 255, 255), f);
-      }
-      break;
+//    case RAINBOW:
+//      FOREACH_FACE(f) {
+//        setColorOnFace(makeColorHSB(colorHues[f], 255, 255), f);
+//      }
+//      break;
     case EXPLODE:
-      setColor(makeColorHSB(colorHues[blinkColor], 255, random(255)));
-      break;
-    case BEAM:
-      setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
-      setColorOnFace(WHITE, 0);
-      setColorOnFace(WHITE, 2);
-      setColorOnFace(WHITE, 4);
-      break;
-    case BUCKET:
       setColor(OFF);
-      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), random(2));
-      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 3);
-      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 4);
-      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), 5);
+      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), (millis() / 100) % 6);
       break;
   }
 
@@ -161,8 +138,8 @@ void inertLoop() {
     if (!isValueReceivedOnFaceExpired(f)) {
       byte neighborData = getLastValueReceivedOnFace(f);
       //check to see if it's INERT
-      if (getNeighborColor(neighborData) == blinkColor || getNeighborState(neighborData) == RAINBOW) {//ok, this is our color
-        if (getNeighborState(neighborData) == INERT || getNeighborState(neighborData) == RAINBOW) {//this one is inert, but could still help the matches
+      if (getNeighborColor(neighborData) == blinkColor) {//ok, this is our color
+        if (getNeighborState(neighborData) == INERT) {//this one is inert, but could still help the matches
           sameColorNeighbors++;
         } else if (getNeighborState(neighborData) == MATCH_MADE) {//this on is in matchmade!
           sameColorNeighbors += 2;//just automatically get us high enough
@@ -208,23 +185,6 @@ void inertLoop() {
   }
 }
 
-void rainbowLoop() {
-  byte neighborColorSets[5] = {0, 0, 0, 0, 0};
-
-  //all I gotta do is look for neighbors that are matching
-  FOREACH_FACE(f) {
-    if (!isValueReceivedOnFaceExpired(f)) {
-      byte neighborData = getLastValueReceivedOnFace(f);
-      if (getNeighborState(neighborData) == MATCH_MADE) {//this on is in matchmade!
-        setFullState(MATCH_MADE);//go into matching
-        blinkColor = getNeighborColor(neighborData);//change color to this match color
-      } else {//no match made, but track their colors
-
-      }
-    }
-  }
-}
-
 void matchmadeLoop() {
   //so in here, we listen to make sure no same-color neighbor is waiting
   bool foundUnmatchedNeighbors = false;
@@ -233,8 +193,6 @@ void matchmadeLoop() {
       byte neighborData = getLastValueReceivedOnFace(f);
       if (getNeighborState(neighborData) == INERT && getNeighborColor(neighborData) == blinkColor) {
         //this neighbor is my color and inert - we need to wait to dissolve
-        foundUnmatchedNeighbors = true;
-      } else if (getNeighborState(neighborData) == RAINBOW) {
         foundUnmatchedNeighbors = true;
       }
     }
@@ -290,28 +248,14 @@ void createNewBlink() {
 
     matchesMade++;
     if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
-      byte whichSpecial = random(1);
-      switch (whichSpecial) {
-        case 0://a rainbow piece!
-          nextState = RAINBOW;
-          specialState = RAINBOW;
-          break;
-        case 1:
-          nextState = INERT;
-          specialState = EXPLODE;
-          break;
-      }
+
+      nextState = INERT;
+      specialState = EXPLODE;
+
     } else {
       nextState = INERT;
       specialState = INERT;
     }
-
-  } else if (specialState == RAINBOW) {
-
-    //this is a rainbow blink becoming normal again
-    matchesMade = 0;
-    nextState = INERT;
-    specialState = INERT;
 
   } else {
 
