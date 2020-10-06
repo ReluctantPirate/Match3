@@ -1,4 +1,4 @@
-enum blinkStates {INERT, MATCH_MADE, DISSOLVING, EXPLODE, BEAM, BUCKET, RESOLVE};
+enum blinkStates {INERT, MATCH_MADE, DISSOLVING, BOMB, EXPLODE, R_BOMB, RESOLVE};
 byte signalState = INERT;
 byte nextState = INERT;
 byte specialState = INERT;
@@ -42,11 +42,8 @@ void loop() {
       case EXPLODE:
         explodeLoop();
         break;
-      case BEAM:
-        //beamLoop();
-        break;
-      case BUCKET:
-        bucketLoop();
+      case BOMB:
+        bombLoop();
         break;
       case RESOLVE:
         resolveLoop();
@@ -63,6 +60,11 @@ void loop() {
     case INERT:
     case MATCH_MADE:
       inertDisplay();
+      break;
+    case BOMB:
+    case EXPLODE:
+      setColor(OFF);
+      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), (millis() / 100) % 6);
       break;
     case DISSOLVING:
       dissolveDisplay();
@@ -101,20 +103,8 @@ void dissolveDisplay() {
 }
 
 void inertDisplay() {
-  switch (specialState) {
-    case INERT:
-      setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
-      break;
-//    case RAINBOW:
-//      FOREACH_FACE(f) {
-//        setColorOnFace(makeColorHSB(colorHues[f], 255, 255), f);
-//      }
-//      break;
-    case EXPLODE:
-      setColor(OFF);
-      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255), (millis() / 100) % 6);
-      break;
-  }
+
+  setColor(makeColorHSB(colorHues[blinkColor], 255, 255));
 
   //do bubbles if it's bubble time
   if (specialState == INERT) {
@@ -156,8 +146,8 @@ void inertLoop() {
         //so this makes us into a matching color thing
         signalState = MATCH_MADE;
         blinkColor = getNeighborColor(neighborData);
-      } else if (getNeighborState(neighborData) == BUCKET) {
-        signalState = BUCKET;
+      } else if (getNeighborState(neighborData) == R_BOMB) {
+        signalState = R_BOMB;
         blinkColor = getNeighborColor(neighborData);
       }
     }
@@ -167,22 +157,30 @@ void inertLoop() {
   if (sameColorNeighbors >= 2) {
     setFullState(MATCH_MADE);
   }
+}
+
+void bombLoop() {
 
   //listen for button clicks
   if (buttonSingleClicked()) {
-    switch (specialState) {
-      case BEAM:
-        setFullState(EXPLODE);
-        break;
-      case EXPLODE:
-        setFullState(EXPLODE);
-        wasActivated = true;
-        break;
-      case BUCKET:
-        setFullState(BUCKET);
-        break;
+    setFullState(EXPLODE);
+  }
+
+  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
+  FOREACH_FACE(f) {
+    if (!isValueReceivedOnFaceExpired(f)) {
+      byte neighborData = getLastValueReceivedOnFace(f);
+      if (getNeighborState(neighborData) == EXPLODE) {
+        //so this makes us into a matching color thing
+        signalState = MATCH_MADE;
+        blinkColor = getNeighborColor(neighborData);
+      } else if (getNeighborState(neighborData) == R_BOMB) {
+        signalState = R_BOMB;
+        blinkColor = getNeighborColor(neighborData);
+      }
     }
   }
+
 }
 
 void matchmadeLoop() {
@@ -249,7 +247,7 @@ void createNewBlink() {
     matchesMade++;
     if (matchesMade >= MATCH_GOAL) {//normal blink, may upgrade
 
-      nextState = INERT;
+      nextState = BOMB;
       specialState = EXPLODE;
 
     } else {
@@ -257,14 +255,11 @@ void createNewBlink() {
       specialState = INERT;
     }
 
-  } else {
+  } else {//special blinks simply reset to 0
 
-    //special blink, just needs a new color
-    if (wasActivated) {
-      matchesMade = 0;
-      nextState = INERT;
-      specialState = INERT;
-    }
+    matchesMade = 0;
+    nextState = INERT;
+    specialState = INERT;
 
   }
 
