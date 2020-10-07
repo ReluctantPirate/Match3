@@ -20,6 +20,9 @@ byte bubbleFace;
 #define BUBBLE_WAIT_MIN 150
 #define BUBBLE_WAIT_MAX 2000
 
+Timer bombClickTimer;
+#define BOMB_ACTIVE_TIME 2000
+
 void setup() {
   randomize();
   blinkColor = random(NUM_COLORS - 1);
@@ -138,25 +141,11 @@ void inertLoop() {
     }
   }
 
-  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
-  FOREACH_FACE(f) {
-    if (!isValueReceivedOnFaceExpired(f)) {
-      byte neighborData = getLastValueReceivedOnFace(f);
-      if (getNeighborState(neighborData) == EXPLODE) {
-        //so this makes us into a matching color thing
-        signalState = MATCH_MADE;
-        blinkColor = getNeighborColor(neighborData);
-      } else if (getNeighborState(neighborData) == R_BOMB) {
-        signalState = R_BOMB;
-        blinkColor = getNeighborColor(neighborData);
-      }
-    }
-  }
-
-
   if (sameColorNeighbors >= 2) {
     setFullState(MATCH_MADE);
   }
+
+  listenForExplode();
 }
 
 void bombLoop() {
@@ -166,20 +155,16 @@ void bombLoop() {
     setFullState(EXPLODE);
   }
 
-  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
-  FOREACH_FACE(f) {
-    if (!isValueReceivedOnFaceExpired(f)) {
-      byte neighborData = getLastValueReceivedOnFace(f);
-      if (getNeighborState(neighborData) == EXPLODE) {
-        //so this makes us into a matching color thing
-        signalState = MATCH_MADE;
-        blinkColor = getNeighborColor(neighborData);
-      } else if (getNeighborState(neighborData) == R_BOMB) {
-        signalState = R_BOMB;
-        blinkColor = getNeighborColor(neighborData);
-      }
-    }
+  if (bombClickTimer.isExpired()) {
+    //so here we need to revert to a regular dude
+    matchesMade = 0;
+    nextState = INERT;
+    specialState = INERT;
+    signalState = INERT;
   }
+
+  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
+  listenForExplode();
 
 }
 
@@ -201,12 +186,33 @@ void matchmadeLoop() {
     createNewBlink();
     dissolveTimer.set(DISSOLVE_TIME);
   }
+
+  listenForExplode();
 }
 
 void dissolvingLoop() {
   if (dissolveTimer.isExpired()) {
     setFullState(nextState);
-    //TODO: THIS IS WHERE SPECIALS SHOW UP
+    bombClickTimer.set(BOMB_ACTIVE_TIME);
+  }
+
+  listenForExplode();
+}
+
+void listenForExplode() {
+  //search my neighbors to see if there are special things (EXPLODE or BUCKET)
+  FOREACH_FACE(f) {
+    if (!isValueReceivedOnFaceExpired(f)) {
+      byte neighborData = getLastValueReceivedOnFace(f);
+      if (getNeighborState(neighborData) == EXPLODE) {
+        //so this makes us into a matching color thing
+        signalState = MATCH_MADE;
+        blinkColor = getNeighborColor(neighborData);
+      } else if (getNeighborState(neighborData) == R_BOMB) {
+        signalState = R_BOMB;
+        blinkColor = getNeighborColor(neighborData);
+      }
+    }
   }
 }
 
