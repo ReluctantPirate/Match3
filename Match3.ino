@@ -13,6 +13,7 @@ Timer dissolveTimer;
 #define DISSOLVE_TIME 1500
 
 byte matchesMade = 0;
+byte bombActivations = 0;
 #define MATCH_GOAL 10
 Timer bubbleTimer;
 byte bubbleFace;
@@ -171,6 +172,7 @@ void bombLoop() {
   //listen for button clicks
   if (buttonPressed()) {
     signalState = EXPLODE;
+    bombActivations++;
   }
 
   if (bombClickTimer.isExpired()) {
@@ -226,6 +228,7 @@ void listenForExplode() {
         //so this makes us into a matching color thing
         signalState = MATCH_MADE;
         blinkColor = getNeighborColor(neighborData);
+        bombActivations++;
       } else if (getNeighborState(neighborData) == R_BOMB) {
         signalState = R_BOMB;
         blinkColor = getNeighborColor(neighborData);
