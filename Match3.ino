@@ -152,14 +152,14 @@ void inertLoop() {
   }
 
   if (sameColorNeighbors >= 2) {
-    setFullState(MATCH_MADE);
+    signalState = MATCH_MADE;
   }
 
   listenForExplode();
 
   if (buttonMultiClicked()) {
     if (buttonClickCount() == 3) {
-      setFullState(DISSOLVING);
+      signalState = DISSOLVING;
       createNewBlink();
       dissolveTimer.set(DISSOLVE_TIME);
     }
@@ -170,7 +170,7 @@ void bombLoop() {
 
   //listen for button clicks
   if (buttonPressed()) {
-    setFullState(EXPLODE);
+    signalState = EXPLODE;
   }
 
   if (bombClickTimer.isExpired()) {
@@ -200,7 +200,7 @@ void matchmadeLoop() {
   }
 
   if (foundUnmatchedNeighbors == false) {
-    setFullState(DISSOLVING);
+    signalState = DISSOLVING;
     createNewBlink();
     dissolveTimer.set(DISSOLVE_TIME);
   }
@@ -210,7 +210,7 @@ void matchmadeLoop() {
 
 void dissolvingLoop() {
   if (dissolveTimer.isExpired()) {
-    setFullState(nextState);
+    signalState = nextState;
     bombClickTimer.set(BOMB_ACTIVE_TIME);
   }
 
@@ -287,10 +287,6 @@ void createNewBlink() {
 
   }
 
-}
-
-void setFullState(byte state) {
-  signalState = state;
 }
 
 byte getNeighborState(byte data) {
