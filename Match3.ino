@@ -76,6 +76,8 @@ void loop() {
 
   //dump button presses
   buttonSingleClicked();
+  buttonMultiClicked();
+  buttonPressed();
 }
 
 ////DISPLAY FUNCTIONS
@@ -91,15 +93,23 @@ void dissolveDisplay() {
   } else {//second half
 
     byte dissolveBrightness = map(dissolveTimer.getRemaining(), 0, DISSOLVE_TIME / 2, 0, 255);
-    setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
+
+    if (nextState == BOMB) {
+      setColor(OFF);
+      setColorOnFace(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness), (millis() / 100) % 6);
+    } else {
+      setColor(makeColorHSB(colorHues[blinkColor], 255, 255 - dissolveBrightness));
+    }
 
   }
 
   //also do the little swirly goo
-  byte swirlFrame = (DISSOLVE_TIME - dissolveTimer.getRemaining()) / SWIRL_INTERVAL;//this runs from 0 - some large number, all we care about are the first 6
-  FOREACH_FACE(f) {
-    if (f == swirlFrame) {
-      setColorOnFace(WHITE, f);
+  byte swirlFrame = (DISSOLVE_TIME - dissolveTimer.getRemaining()) / SWIRL_INTERVAL;
+  if (swirlFrame < 8) {
+    FOREACH_FACE(f) {
+      if (f == swirlFrame % 6) {
+        setColorOnFace(WHITE, f);
+      }
     }
   }
 
@@ -146,12 +156,20 @@ void inertLoop() {
   }
 
   listenForExplode();
+
+  if (buttonMultiClicked()) {
+    if (buttonClickCount() == 3) {
+      setFullState(DISSOLVING);
+      createNewBlink();
+      dissolveTimer.set(DISSOLVE_TIME);
+    }
+  }
 }
 
 void bombLoop() {
 
   //listen for button clicks
-  if (buttonSingleClicked()) {
+  if (buttonPressed()) {
     setFullState(EXPLODE);
   }
 
