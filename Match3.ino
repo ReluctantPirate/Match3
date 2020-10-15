@@ -76,7 +76,6 @@ void loop() {
   }
 
   //dump button presses
-  buttonSingleClicked();
   buttonMultiClicked();
   buttonPressed();
 }
@@ -229,9 +228,6 @@ void listenForExplode() {
         signalState = MATCH_MADE;
         blinkColor = getNeighborColor(neighborData);
         bombActivations++;
-      } else if (getNeighborState(neighborData) == R_BOMB) {
-        signalState = R_BOMB;
-        blinkColor = getNeighborColor(neighborData);
       }
     }
   }
